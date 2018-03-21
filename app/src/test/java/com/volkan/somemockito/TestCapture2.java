@@ -2,6 +2,7 @@ package com.volkan.somemockito;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -9,9 +10,14 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.LinkedList;
+import java.util.List;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -80,5 +86,72 @@ public class TestCapture2 {
         System.out.println(mockedList.get(0));
         System.out.println(mockedList.get(0));
         System.out.println(mockedList.get(1));
+    }
+
+    @Test
+    public void doSomething() {
+        Mockito.doThrow(new RuntimeException())
+                .when(mockedList).clear();
+
+        //following throws RuntimeException:
+        mockedList.clear();
+    }
+
+    @Test
+    public void spyingOnReaalObjects() {
+
+        List list = new LinkedList();
+        List spy = Mockito.spy(list);
+
+        //optionally, you can stub out some methods:
+        when(spy.size()).thenReturn(100);
+
+        //using the spy calls *real* methods
+        spy.add("one");
+        spy.add("two");
+
+        //prints "one" - the first element of a list
+        System.out.println(spy.get(0));
+
+        //size() method was stubbed - 100 is printed
+        System.out.println(spy.size());
+
+        //optionally, you can verify
+        verify(spy).add("one");
+        verify(spy).add("two");
+
+    }
+
+    @Test
+    public void gotchaOnSpyingRealObjects() {
+        List list = new LinkedList();
+        List spy = Mockito.spy(list);
+
+        //Impossible: real method is called so spy.get(0) throws IndexOutOfBoundsException (the list is yet empty)
+        when(spy.get(0)).thenReturn("foo");
+
+        //You have to use doReturn() for stubbing
+        Mockito.doReturn("foo").when(spy).get(0);
+    }
+
+    @Test
+    public void capturingForFurtherAssertions() {
+        MailDeliverer subject = mock(MailDeliverer.class);
+        ExternalMailSystem externalMailSystem = mock(ExternalMailSystem.class);
+
+        String expectedUser = "tim";
+        String expectedDomain = "wingfield.com";
+        String expectedBody = "Hi Tim!";
+
+        subject.deliver(expectedUser + "@" + expectedDomain, expectedBody);
+
+        ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
+
+        verify(externalMailSystem).send(emailCaptor.capture());
+
+        Email email = emailCaptor.getValue();
+        assertThat(email.getUser(), is(expectedUser));
+        assertThat(email.getDomain(), is(expectedDomain));
+        assertThat(email.getBody(), is(expectedBody));
     }
 }
