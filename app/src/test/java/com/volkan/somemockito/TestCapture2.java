@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -136,22 +137,20 @@ public class TestCapture2 {
 
     @Test
     public void capturingForFurtherAssertions() {
-        MailDeliverer subject = mock(MailDeliverer.class);
-        ExternalMailSystem externalMailSystem = mock(ExternalMailSystem.class);
+        Email email = mock(Email.class);
+        email.setBody("Naber");
 
-        String expectedUser = "tim";
-        String expectedDomain = "wingfield.com";
-        String expectedBody = "Hi Tim!";
+        ArgumentCaptor<String> argument = ArgumentCaptor.forClass(String.class);
+        verify(email).setBody(argument.capture());
+        assertEquals("Naber", argument.getValue());
+    }
 
-        subject.deliver(expectedUser + "@" + expectedDomain, expectedBody);
+    @Test
+    public void realPartialMocks(){
+        List list = spy(new LinkedList());
 
-        ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
+        Email email = mock(Email.class);
 
-        verify(externalMailSystem).send(emailCaptor.capture());
-
-        Email email = emailCaptor.getValue();
-        assertThat(email.getUser(), is(expectedUser));
-        assertThat(email.getDomain(), is(expectedDomain));
-        assertThat(email.getBody(), is(expectedBody));
+        Mockito.when(email.setBody("naber")).thenCallRealMethod();
     }
 }
